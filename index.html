@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+input::-webkit-calendar-picker-indicator { filter: invert(1) brightness(100%) !important; cursor: pointer; opacity: 1 !important; }
+.rec-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 16px 20px; transition: all 0.2s; }
+.rec-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+</style>
+
+<div class="max-w-7xl mx-auto p-6">
+
+    <!-- AI SMART SEARCH BAR -->
+    <div class="mb-4">
+        <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 text-sm font-black">✦ AI</span>
+            <input id="ai-search-input" type="text" placeholder='Try: "cheap bike near MIDC" or "EV spot under ₹60" or "available SUV parking"'
+                class="w-full bg-purple-900/20 border border-purple-500/30 pl-14 pr-32 py-3.5 rounded-2xl text-sm outline-none focus:border-purple-500 transition placeholder:text-white/25 text-white"
+                onkeydown="if(event.key==='Enter') runAISearch()">
+            <button onclick="runAISearch()"
+                class="absolute right-2 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-500 transition px-4 py-1.5 rounded-xl text-xs font-black">
+                {{ texts.ai_search }}
+            </button>
+        </div>
+        <div id="ai-result-label" class="text-xs text-purple-400/70 mt-1.5 ml-1 hidden"></div>
+    </div>
+
+    <!-- SEARCH + FILTERS -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <form method="GET" action="/search" class="flex gap-3 flex-wrap flex-1">
+            <div class="relative flex-1 min-w-48">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                <input type="text" name="q" value="{{ q }}" placeholder="Search parking areas..."
+                    class="w-full bg-slate-900 border border-white/10 pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none focus:border-blue-500 transition">
+                <input type="hidden" name="lang" value="{{ lang }}">
+                <input type="hidden" name="v_type" value="{{ v_type }}">
+            </div>
+            <button type="submit" class="bg-blue-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 transition">
+                {{ texts.search }}
+            </button>
+        </form>
+        <div class="flex gap-3 flex-wrap items-center">
+            <select onchange="changeVehicle(this.value)" class="bg-slate-900 border border-white/10 p-2.5 rounded-xl text-xs">
+                <option value="Any" {% if v_type == 'Any' %}selected{% endif %}>{{ texts.all_vehicles }}</option>
+                <option value="Car" {% if v_type == 'Car' %}selected{% endif %}>🚘 Car</option>
+                <option value="SUV" {% if v_type == 'SUV' %}selected{% endif %}>🚙 SUV</option>
+                <option value="Bike" {% if v_type == 'Bike' %}selected{% endif %}>🛵 Bike</option>
+                <option value="Truck" {% if v_type == 'Truck' %}selected{% endif %}>🚛 Truck</option>
+                <option value="EV" {% if v_type == 'EV' %}selected{% endif %}>⚡ EV</option>
+            </select>
+            <select onchange="changeLang(this.value)" class="bg-slate-900 border border-white/10 p-2 rounded-xl text-xs">
+                <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
+                <option value="hi" {% if lang == 'hi' %}selected{% endif %}>Hindi</option>
+                <option value="mr" {% if lang == 'mr' %}selected{% endif %}>Marathi</option>
+            </select>
+            <button onclick="startVoiceSearch()" class="bg-blue-600/20 text-blue-400 p-2.5 px-4 rounded-xl text-xs font-bold border border-blue-500/20 hover:bg-blue-600/40 transition">
+                <i class="fas fa-microphone mr-1"></i> {{ texts.voice }}
+            </button>
+            <div id="status" class="text-xs text-emerald-400 font-mono animate-pulse">● {{ texts.status }}</div>
+        </div>
+    </div>
+
+    <!-- MAP -->
+    <div id="map" class="h-64 rounded-3xl mb-8 glass shadow-2xl border border-white/10 overflow-hidden"></div>
+
+    <!-- SMART RECOMMENDATIONS -->
+    {% if recs and spots %}
+    <div class="mb-8">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-xs font-black uppercase tracking-widest text-yellow-400">✦ {{ texts.smart_rec }}</span>
+            <div class="flex-1 h-px bg-white/5"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% if recs.nearest %}
+            <div class="rec-card border-blue-500/20 cursor-pointer" onclick="openPreBook('{{ recs.nearest.id }}', '{{ texts.spot_names.get(recs.nearest.name, recs.nearest.name) }}', '{{ recs.nearest.price }}')">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-blue-400 text-lg">📍</span>
+                    <span class="text-xs font-black uppercase text-blue-400 tracking-wider">{{ texts.nearest }}</span>
+                </div>
+                <div class="font-bold text-sm text-white truncate">{{ texts.spot_names.get(recs.nearest.name, recs.nearest.name) }}</div>
+                <div class="text-xs text-white/40 truncate">{{ recs.nearest.address }}</div>
+                <div class="flex justify-between items-center mt-3">
+                    <span class="text-emerald-400 font-black">₹{{ recs.nearest.price }}/{{ recs.nearest.unit }}</span>
+                    <span class="text-blue-400 text-xs font-bold">{{ recs.nearest.distance }} km</span>
+                </div>
+            </div>
+            {% endif %}
+            {% if recs.most_available %}
+            <div class="rec-card border-emerald-500/20 cursor-pointer" onclick="openPreBook('{{ recs.most_available.id }}', '{{ texts.spot_names.get(recs.most_available.name, recs.most_available.name) }}', '{{ recs.most_available.price }}')">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-emerald-400 text-lg">🅿️</span>
+                    <span class="text-xs font-black uppercase text-emerald-400 tracking-wider">{{ texts.most_available }}</span>
+                </div>
+                <div class="font-bold text-sm text-white truncate">{{ texts.spot_names.get(recs.most_available.name, recs.most_available.name) }}</div>
+                <div class="text-xs text-white/40 truncate">{{ recs.most_available.address }}</div>
+                <div class="flex justify-between items-center mt-3">
+                    <span class="text-emerald-400 font-black">₹{{ recs.most_available.price }}/{{ recs.most_available.unit }}</span>
+                    <span class="text-emerald-400 text-xs font-bold">{{ recs.most_available.rem_slots }} {{ texts.slots_free }}</span>
+                </div>
+            </div>
+            {% endif %}
+            {% if recs.cheapest %}
+            <div class="rec-card border-yellow-500/20 cursor-pointer" onclick="openPreBook('{{ recs.cheapest.id }}', '{{ texts.spot_names.get(recs.cheapest.name, recs.cheapest.name) }}', '{{ recs.cheapest.price }}')">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-yellow-400 text-lg">💰</span>
+                    <span class="text-xs font-black uppercase text-yellow-400 tracking-wider">{{ texts.best_price }}</span>
+                </div>
+                <div class="font-bold text-sm text-white truncate">{{ texts.spot_names.get(recs.cheapest.name, recs.cheapest.name) }}</div>
+                <div class="text-xs text-white/40 truncate">{{ recs.cheapest.address }}</div>
+                <div class="flex justify-between items-center mt-3">
+                    <span class="text-yellow-400 font-black">₹{{ recs.cheapest.price }}/{{ recs.cheapest.unit }}</span>
+                    <span class="text-white/40 text-xs">{{ recs.cheapest.distance }} km</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- OCCUPANCY CHART -->
+    {% if spots %}
+    <div class="glass rounded-3xl p-5 mb-8">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-xs font-black uppercase tracking-widest text-purple-400">📊 {{ texts.occupancy_chart }}</span>
+        </div>
+        <canvas id="occupancyChart" height="80"></canvas>
+    </div>
+    {% endif %}
+
+    <!-- SPOT GRID -->
+    <div class="flex items-center gap-2 mb-4">
+        <span class="text-xs font-black uppercase tracking-widest text-white/40">{{ texts.all_areas }}</span>
+        <div class="flex-1 h-px bg-white/5"></div>
+        <span class="text-xs text-white/30">{{ spots | length }} {{ texts.found }}</span>
+    </div>
+
+    {% if spots %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for spot in spots %}
+        <div class="glass rounded-3xl overflow-hidden group hover:border-blue-500/40 transition-all duration-200">
+            <div class="relative h-44">
+                <img src="{{ spot.photo }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div class="absolute top-3 left-3 flex gap-1 flex-wrap">
+                    {% if spot.handicap %}<span class="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-md font-bold">♿</span>{% endif %}
+                    {% if spot.is_ev %}<span class="bg-emerald-500 text-black text-[10px] px-2 py-0.5 rounded-md font-bold">⚡ EV</span>{% endif %}
+                </div>
+                <div class="absolute top-3 right-3">
+                    {% if spot.rem_slots == 0 %}
+                        <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-md font-bold">{{ texts.full_badge }}</span>
+                    {% else %}
+                        <span class="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-md font-bold">{{ texts.avail_badge }}</span>
+                    {% endif %}
+                </div>
+                <div class="absolute bottom-3 left-3">
+                    <span class="text-blue-300 text-xs font-bold">{{ spot.distance }} {{ texts.km_away }}</span>
+                </div>
+            </div>
+            <div class="p-5">
+                <h3 class="text-lg font-bold leading-tight mb-1">{{ texts.spot_names.get(spot.name, spot.name) }}</h3>
+                <p class="text-xs text-white/40 mb-3 flex items-center gap-1">
+                    <i class="fas fa-map-marker-alt text-white/30"></i> {{ spot.address }}
+                </p>
+
+                <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
+                    <div class="bg-white/5 rounded-xl p-2.5">
+                        <div class="text-white/40 mb-0.5">{{ texts.vehicle_type }}</div>
+                        <div class="font-bold">{{ spot.size }}</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-2.5">
+                        <div class="text-white/40 mb-0.5">{{ texts.charge }}</div>
+                        <div class="font-bold text-emerald-400">₹{{ spot.price }}/{{ spot.unit }}</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-2.5">
+                        <div class="text-white/40 mb-0.5">{{ texts.total_slots }}</div>
+                        <div class="font-bold">{{ spot.total_slots }}</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-2.5">
+                        <div class="text-white/40 mb-0.5">{{ texts.available }}</div>
+                        <div class="font-bold {% if spot.rem_slots == 0 %}text-red-400{% elif spot.rem_slots <= 3 %}text-yellow-400{% else %}text-emerald-400{% endif %}">
+                            {{ spot.rem_slots }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Occupancy bar -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-white/30 mb-1">
+                        <span>{{ texts.occupancy }}</span>
+                        <span>{{ spot.total_slots - spot.rem_slots }}/{{ spot.total_slots }}</span>
+                    </div>
+                    <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all
+                            {% if spot.rem_slots == 0 %}bg-red-500
+                            {% elif spot.rem_slots <= spot.total_slots / 3 %}bg-yellow-500
+                            {% else %}bg-emerald-500{% endif %}"
+                            style="width:{{ (((spot.total_slots - spot.rem_slots) / spot.total_slots) * 100) | int if spot.total_slots > 0 else 0 }}%">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    {% if spot.rem_slots > 0 %}
+                    <button onclick="openPreBook('{{ spot.id }}', '{{ texts.spot_names.get(spot.name, spot.name) }}', '{{ spot.price }}')"
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 transition py-2.5 rounded-xl font-bold text-sm">
+                        <i class="fas fa-parking mr-1"></i> {{ texts.book }}
+                    </button>
+                    {% else %}
+                    <button disabled class="flex-1 bg-white/5 text-white/30 py-2.5 rounded-xl font-bold text-sm cursor-not-allowed">
+                        <i class="fas fa-ban mr-1"></i> {{ texts.fully_booked }}
+                    </button>
+                    {% endif %}
+                    <button onclick="startNav({{ spot.lat }}, {{ spot.lng }})"
+                        class="bg-white/10 hover:bg-white/20 p-2.5 px-4 rounded-xl text-sm transition">
+                        <i class="fas fa-location-arrow text-blue-400"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-20 text-white/30">
+        <i class="fas fa-search text-4xl mb-4 block opacity-20"></i>
+        <p class="font-semibold">{{ texts.no_spots }}</p>
+        <p class="text-sm mt-1">{{ texts.no_spots_sub }}</p>
+        <a href="/search" class="inline-block mt-4 text-blue-400 text-sm hover:underline">{{ texts.clear_filters }}</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- BOOKING MODAL -->
+<div id="payment-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/80 backdrop-blur-md px-4">
+    <div class="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+        <div class="p-6 text-center border-b border-white/10">
+            <h2 class="text-xl font-bold">🚗 {{ texts.reserve_slot }}</h2>
+            <p id="modal-spot-name" class="text-xs text-slate-400 mt-1"></p>
+        </div>
+        <div class="p-6">
+            <label class="text-sm text-slate-300">🚗 {{ texts.vehicle_number }}</label>
+            <input type="text" id="vehicle-number" placeholder="e.g. MH12AB1234" maxlength="15"
+                class="w-full mt-2 mb-4 bg-black/40 p-3 rounded-xl border border-white/10 text-white outline-none focus:border-blue-500 uppercase placeholder:normal-case"
+                oninput="this.value=this.value.toUpperCase()">
+            <label class="text-sm text-slate-300">📅 {{ texts.date }}</label>
+            <input type="date" id="book-date" class="w-full mt-2 mb-4 bg-black/40 p-3 rounded-xl border border-white/10 text-white outline-none">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="text-sm text-slate-300">{{ texts.start_time }}</label>
+                    <input type="time" id="start-time" class="w-full mt-2 bg-black/40 p-3 rounded-xl border border-white/10 text-white outline-none">
+                </div>
+                <div>
+                    <label class="text-sm text-slate-300">{{ texts.end_time }}</label>
+                    <input type="time" id="end-time" class="w-full mt-2 bg-black/40 p-3 rounded-xl border border-white/10 text-white outline-none">
+                </div>
+            </div>
+            <div id="price-box" class="hidden bg-emerald-500/10 border border-white/10 p-4 rounded-2xl mb-4 text-center">
+                <p class="text-xs text-slate-400">{{ texts.estimated_cost }}</p>
+                <p id="price-preview" class="text-2xl font-bold text-emerald-400">₹0</p>
+            </div>
+            <button onclick="calculatePriceOnly()" class="w-full bg-blue-600 py-3 rounded-xl font-bold mb-2 hover:bg-blue-500 transition">{{ texts.check_price }}</button>
+            <button onclick="calculateAndProceed()" class="w-full bg-gradient-to-r from-emerald-500 to-blue-600 py-3 rounded-xl font-bold hover:opacity-90 transition">{{ texts.continue_pay }}</button>
+            <button onclick="closeModal()" class="w-full mt-3 text-slate-400 text-sm hover:text-white">{{ texts.cancel }}</button>
+        </div>
+    </div>
+</div>
+
+<!-- CHECKOUT OVERLAY -->
+<div id="step-pay" class="hidden fixed inset-0 z-[999] bg-black/70 backdrop-blur-md flex items-center justify-center px-4">
+    <div class="w-full max-w-md bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-6">
+        <h2 class="text-2xl font-bold text-white text-center mb-2">{{ texts.checkout }}</h2>
+        <p class="text-center text-slate-300 text-sm mb-2" id="checkout-spot-name"></p>
+        <p class="text-center text-emerald-400 font-black text-xl mb-6" id="checkout-price"></p>
+        <button onclick="pay('ONLINE')" class="w-full bg-emerald-500 hover:bg-emerald-600 transition py-3 rounded-xl font-bold text-white mb-3 shadow-lg">💳 {{ texts.pay_online }}</button>
+        <button onclick="pay('COD')" class="w-full bg-yellow-500 hover:bg-yellow-600 transition py-3 rounded-xl font-bold text-black shadow-lg">💵 {{ texts.pay_cod }}</button>
+        <button onclick="closeCheckout()" class="w-full mt-4 text-slate-400 hover:text-white text-sm">{{ texts.cancel }}</button>
+    </div>
+</div>
+
+<script>
+const spotNameTranslations = {{ texts.spot_names | tojson }};
+function tName(name) { return spotNameTranslations[name] || name; }
+let active = {};
+
+function openPreBook(id, name, price) {
+    active = { id, name, price };
+    document.getElementById('modal-spot-name').textContent = name;
+    document.getElementById('payment-modal').classList.remove('hidden');
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('book-date').value = today;
+}
+function closeModal() { document.getElementById("payment-modal").classList.add("hidden"); }
+function closeCheckout() { document.getElementById("step-pay").classList.add("hidden"); }
+
+function calculatePriceOnly() {
+    const start = document.getElementById("start-time").value;
+    const end = document.getElementById("end-time").value;
+    if (!start || !end) { alert("Please select start and end time"); return; }
+    const hours = (new Date(`2024-01-01T${end}`) - new Date(`2024-01-01T${start}`)) / 3600000;
+    if (hours <= 0) { alert("End time must be after start time"); return; }
+    const price = hours * Number(active.price);
+    document.getElementById("price-box").classList.remove("hidden");
+    document.getElementById("price-preview").innerText = "₹" + price.toFixed(0);
+    active.calculatedPrice = price;
+}
+
+function calculateAndProceed() {
+    const start = document.getElementById("start-time").value;
+    const end = document.getElementById("end-time").value;
+    const vnum = document.getElementById("vehicle-number").value.trim();
+    if (!vnum) { alert("Please enter your vehicle number"); document.getElementById("vehicle-number").focus(); return; }
+    if (!start || !end) { alert("Please select start and end time"); return; }
+    const hours = (new Date(`2024-01-01T${end}`) - new Date(`2024-01-01T${start}`)) / 3600000;
+    if (hours <= 0) { alert("End time must be after start time"); return; }
+    active.calculatedPrice = hours * Number(active.price);
+    active.vehicleNumber = vnum;
+    active.bookDate = document.getElementById("book-date").value;
+    active.startTime = start;
+    active.endTime = end;
+    document.getElementById("price-box").classList.remove("hidden");
+    document.getElementById("price-preview").innerText = "₹" + active.calculatedPrice.toFixed(0);
+    closeModal();
+    document.getElementById("checkout-spot-name").textContent = active.name;
+    document.getElementById("checkout-price").textContent = "₹" + active.calculatedPrice.toFixed(0);
+    document.getElementById("step-pay").classList.remove("hidden");
+}
+
+async function pay(method) {
+    if (method === 'ONLINE') {
+        startRazorpayPayment();
+    } else {
+        const resp = await fetch(`/cod-book/${active.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vehicle_number: active.vehicleNumber || '', book_date: active.bookDate || '', start_time: active.startTime || '', end_time: active.endTime || '', amount: Math.round(active.calculatedPrice || active.price) })
+        });
+        const data = await resp.json();
+        closeCheckout();
+        if (data.status === 'success') {
+            window.location.href = `/booking-confirmation/${data.booking_id}`;
+        } else {
+            alert('Booking failed: ' + (data.error || 'Unknown error'));
+        }
+    }
+}
+
+async function startRazorpayPayment() {
+    const orderResp = await fetch(`/create-order/${active.id}`, { method: 'POST' });
+    if (!orderResp.ok) {
+        const err = await orderResp.json();
+        alert('Could not create order: ' + (err.error || 'Unknown error'));
+        return;
+    }
+    const order = await orderResp.json();
+    const options = {
+        key: order.key, amount: order.amount, currency: "INR",
+        order_id: order.order_id, name: "Park Smarter", description: order.spot_name,
+        handler: async function(response) {
+            const verifyResp = await fetch('/verify-payment', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                    spot_id: active.id,
+                    amount: Math.round(active.calculatedPrice || active.price),
+                    user_phone: "{% if session_user %}{{ session_user.phone }}{% endif %}",
+                    vehicle_number: active.vehicleNumber || "",
+                    book_date: active.bookDate || "",
+                    start_time: active.startTime || "",
+                    end_time: active.endTime || ""
+                })
+            });
+            const result = await verifyResp.json();
+            closeCheckout();
+            if (result.status === 'success') {
+                window.location.href = `/booking-confirmation/${result.booking_id}`;
+            } else {
+                alert('Payment verification failed. Please contact support.');
+            }
+        },
+        theme: { color: "#10b981" }
+    };
+    const rzp = new Razorpay(options);
+    rzp.open();
+}
+
+function initMap() {
+    const centerPoint = { lat: 18.7614, lng: 73.8631 };
+    const map = new google.maps.Map(document.getElementById("map"), { zoom: 14, center: centerPoint });
+    {% for spot in spots %}
+    new google.maps.Marker({
+        position: { lat: {{ spot.lat }}, lng: {{ spot.lng }} },
+        map: map,
+        title: "{{ spot.name }}",
+        icon: 'http://maps.google.com/mapfiles/ms/icons/{% if spot.rem_slots == 0 %}red{% else %}green{% endif %}-dot.png'
+    });
+    {% endfor %}
+}
+
+function startNav(lat, lng) {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
+}
+
+function startVoiceSearch() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { alert("Voice search not supported. Use Chrome."); return; }
+    const r = new SpeechRecognition(); r.lang = 'en-IN';
+    r.onstart = () => { document.getElementById('status').innerText = "● Listening..."; };
+    r.onresult = (e) => { window.location.href = `/search?q=${encodeURIComponent(e.results[0][0].transcript)}`; };
+    r.onerror = (e) => { alert("Voice error: " + e.error); };
+    r.onend = () => { document.getElementById('status').innerText = "● System Live"; };
+    r.start();
+}
+
+function changeLang(lang) {
+    const p = new URLSearchParams(window.location.search);
+    window.location.href = `/search?lang=${lang}&q=${p.get('q')||''}&v_type=${p.get('v_type')||'Any'}`;
+}
+function changeVehicle(v_type) {
+    const p = new URLSearchParams(window.location.search);
+    window.location.href = `/search?lang=${p.get('lang')||'en'}&q=${p.get('q')||''}&v_type=${v_type}`;
+}
+
+// ── AI SMART SEARCH ──
+async function runAISearch() {
+    const q = document.getElementById('ai-search-input').value.trim();
+    if (!q) return;
+    const btn = document.querySelector('[onclick="runAISearch()"]');
+    btn.textContent = '…'; btn.disabled = true;
+
+    try {
+        const res = await fetch(`/api/ai-search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        const label = document.getElementById('ai-result-label');
+        label.textContent = '✦ ' + data.explanation + ` (${data.count} spots found)`;
+        label.classList.remove('hidden');
+
+        const grid = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3');
+        const counter = document.querySelector('.text-xs.text-white\\/30');
+        if (counter) counter.textContent = `${data.count} found`;
+
+        if (grid && data.spots) {
+            grid.innerHTML = data.spots.map(spot => `
+            <div class="glass rounded-3xl overflow-hidden group hover:border-purple-500/40 transition-all duration-200">
+                <div class="relative h-44">
+                    <img src="${spot.photo || ''}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=400'">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div class="absolute top-3 left-3 flex gap-1 flex-wrap">
+                        ${spot.handicap ? '<span class="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-md font-bold">♿</span>' : ''}
+                        ${spot.is_ev ? '<span class="bg-emerald-500 text-black text-[10px] px-2 py-0.5 rounded-md font-bold">⚡ EV</span>' : ''}
+                    </div>
+                    <div class="absolute top-3 right-3">
+                        ${spot.rem_slots === 0
+                            ? '<span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-md font-bold">FULL</span>'
+                            : '<span class="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-md font-bold">AVAILABLE</span>'}
+                    </div>
+                    <div class="absolute bottom-3 left-3">
+                        <span class="text-purple-300 text-xs font-bold">✦ AI Pick · ${spot.distance} km</span>
+                    </div>
+                </div>
+                <div class="p-5">
+                    <h3 class="text-lg font-bold leading-tight mb-1">${tName(spot.name)}</h3>
+                    <p class="text-xs text-white/40 mb-3 flex items-center gap-1"><i class="fas fa-map-marker-alt text-white/30"></i> ${spot.address}</p>
+                    <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
+                        <div class="bg-white/5 rounded-xl p-2.5"><div class="text-white/40 mb-0.5">Vehicle</div><div class="font-bold">${spot.size}</div></div>
+                        <div class="bg-white/5 rounded-xl p-2.5"><div class="text-white/40 mb-0.5">Charge</div><div class="font-bold text-emerald-400">₹${spot.price}/${spot.unit}</div></div>
+                        <div class="bg-white/5 rounded-xl p-2.5"><div class="text-white/40 mb-0.5">Total Slots</div><div class="font-bold">${spot.total_slots}</div></div>
+                        <div class="bg-white/5 rounded-xl p-2.5"><div class="text-white/40 mb-0.5">Available</div><div class="font-bold ${spot.rem_slots === 0 ? 'text-red-400' : spot.rem_slots <= 3 ? 'text-yellow-400' : 'text-emerald-400'}">${spot.rem_slots}</div></div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${spot.rem_slots > 0
+                            ? `<button onclick="openPreBook('${spot.id}','${tName(spot.name).replace(/'/g,"\\'")}','${spot.price}')" class="flex-1 bg-purple-600 hover:bg-purple-500 transition py-2.5 rounded-xl font-bold text-sm"><i class="fas fa-parking mr-1"></i> Book Now</button>`
+                            : `<button disabled class="flex-1 bg-white/5 text-white/30 py-2.5 rounded-xl font-bold text-sm cursor-not-allowed"><i class="fas fa-ban mr-1"></i> Fully Booked</button>`}
+                        <button onclick="startNav(${spot.lat}, ${spot.lng})" class="bg-white/10 hover:bg-white/20 p-2.5 px-4 rounded-xl text-sm transition"><i class="fas fa-location-arrow text-purple-400"></i></button>
+                    </div>
+                </div>
+            </div>`).join('') || '<div class="col-span-3 text-center py-16 text-white/30"><i class="fas fa-search text-4xl mb-4 block opacity-20"></i><p>No spots match your query. Try different keywords.</p></div>';
+        }
+    } catch(e) {
+        document.getElementById('ai-result-label').textContent = 'AI search failed. Try again.';
+        document.getElementById('ai-result-label').classList.remove('hidden');
+    }
+    btn.textContent = 'AI Search'; btn.disabled = false;
+}
+
+{% if spots %}
+const spotData = {{ spots | tojson }};
+new Chart(document.getElementById('occupancyChart'), {
+    type: 'bar',
+    data: {
+        labels: spotData.map(s => { const n = tName(s.name); return n.length > 22 ? n.substring(0,22)+'…' : n; }),
+        datasets: [
+            { label: 'Occupied', data: spotData.map(s => s.total_slots - s.rem_slots), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 },
+            { label: 'Available', data: spotData.map(s => s.rem_slots), backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 4 }
+        ]
+    },
+    options: {
+        responsive: true, indexAxis: 'y',
+        plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)', font: { size: 11 } } } },
+        scales: {
+            x: { stacked: true, ticks: { color: 'rgba(255,255,255,0.4)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { stacked: true, ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 11 } }, grid: { display: false } }
+        }
+    }
+});
+{% endif %}
+</script>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIG5kqIO_ikFyNyzf35yTUJ4qaoytF0kI&callback=initMap"></script>
+
+{% endblock %}

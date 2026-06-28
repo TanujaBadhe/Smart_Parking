@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto p-12 min-h-screen grid grid-cols-1 md:grid-cols-2 gap-16 items-center bg-slate-950 text-white">
+
+    <div class="flex flex-col items-center text-center md:items-start md:text-left">
+        <p class="text-red-400 font-semibold mb-3 tracking-wide uppercase text-sm">Real Problem</p>
+        <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
+            Your Parking Problem, <span class="text-emerald-400">Solved.</span>
+        </h1>
+        <p class="text-slate-400 mb-8 max-w-md text-lg">
+            Endless searching and wasted fuel shouldn't be your norm. Join the network to reclaim your time.
+        </p>
+
+        <div class="flex gap-4 w-full justify-center md:justify-start">
+            {% if session_user %}
+            <button onclick="window.location.href='/search'"
+                class="bg-emerald-600 px-8 py-4 rounded-2xl font-black text-lg hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/20">
+                Start Parking
+            </button>
+            {% else %}
+            <button onclick="window.location.href='/login'"
+                class="bg-emerald-600 px-8 py-4 rounded-2xl font-black text-lg hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/20">
+                Start Parking
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="glass p-12 rounded-[50px] border border-white/5 text-center">
+        <span class="text-emerald-400 font-bold tracking-widest uppercase text-sm mb-4 block">Next-Gen Mobility</span>
+
+        <h2 class="text-4xl md:text-5xl font-black mb-6 leading-tight">
+            Park Smarter. <br>
+            <span class="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">Earn Faster.</span>
+        </h2>
+
+        <p class="text-lg text-slate-400 mb-10 leading-relaxed">
+            Lease your unused space or find a spot in milliseconds using our AI-driven grid.
+        </p>
+
+        <div class="flex flex-col gap-4">
+            <a href="/signup" class="w-full bg-emerald-600 py-5 rounded-2xl font-black text-xl hover:bg-emerald-500 transition-all hover:scale-[1.02] shadow-xl shadow-emerald-900/40">
+                Create Account
+            </a>
+        </div>
+
+        <p class="text-slate-500 text-sm mt-8 italic">
+            *System Live: 450+ Spots available near you
+        </p>
+    </div>
+</div>
+{% endblock %}

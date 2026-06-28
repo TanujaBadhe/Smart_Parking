@@ -1,0 +1,153 @@
+{% extends "admin_base.html" %}
+{% set active = "areas" %}
+{% block content %}
+
+<div class="flex justify-between items-center mb-8">
+    <div>
+        <h2 class="text-2xl font-black">Parking Areas</h2>
+        <p class="text-white/40 text-sm mt-1">Manage all parking locations</p>
+    </div>
+    <button onclick="document.getElementById('addModal').classList.remove('hidden')"
+        class="btn-primary flex items-center gap-2">
+        <i class="fas fa-plus"></i> Add Area
+    </button>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name & Address</th>
+                <th>Type</th>
+                <th>Price</th>
+                <th>Slots</th>
+                <th>Status</th>
+                <th>Features</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for spot in spots %}
+            <tr>
+                <td class="text-white/40 font-mono text-xs">#{{ spot.id }}</td>
+                <td>
+                    <div class="font-semibold text-sm">{{ spot.name }}</div>
+                    <div class="text-white/40 text-xs mt-0.5">{{ spot.address }}</div>
+                </td>
+                <td><span class="badge badge-yellow">{{ spot.size }}</span></td>
+                <td class="text-emerald-400 font-bold">₹{{ spot.price }}/{{ spot.unit }}</td>
+                <td>
+                    <div class="text-sm font-bold">{{ spot.rem_slots }}<span class="text-white/30">/{{ spot.total_slots }}</span></div>
+                    <div class="w-16 h-1.5 bg-white/10 rounded-full mt-1">
+                        <div class="h-full rounded-full {% if spot.rem_slots == 0 %}bg-red-500{% elif spot.rem_slots < spot.total_slots / 2 %}bg-yellow-500{% else %}bg-emerald-500{% endif %}"
+                             style="width:{{ ((spot.rem_slots / spot.total_slots) * 100) | int if spot.total_slots > 0 else 0 }}%"></div>
+                    </div>
+                </td>
+                <td>
+                    {% if spot.rem_slots == 0 %}
+                        <span class="badge badge-red">Full</span>
+                    {% else %}
+                        <span class="badge badge-green">Available</span>
+                    {% endif %}
+                </td>
+                <td class="text-xs">
+                    {% if spot.is_ev %}<span class="text-emerald-400 mr-1">⚡EV</span>{% endif %}
+                    {% if spot.handicap %}<span class="text-blue-400">♿</span>{% endif %}
+                    {% if not spot.is_ev and not spot.handicap %}<span class="text-white/20">—</span>{% endif %}
+                </td>
+                <td>
+                    <div class="flex gap-2">
+                        <a href="/admin/areas/edit/{{ spot.id }}" class="btn-edit">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <form action="/admin/areas/delete/{{ spot.id }}" method="POST"
+                              onsubmit="return confirm('Delete {{ spot.name }}? This will also remove all bookings.')">
+                            <button type="submit" class="btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ADD MODAL -->
+<div id="addModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-white/10 rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold">Add Parking Area</h3>
+            <button onclick="document.getElementById('addModal').classList.add('hidden')"
+                class="text-white/40 hover:text-white text-xl">&times;</button>
+        </div>
+        <form action="/admin/areas/add" method="POST" class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Parking Name *</label>
+                <input type="text" name="name" required class="form-input" placeholder="e.g. Chakan MIDC Gate Parking">
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Address *</label>
+                <input type="text" name="address" required class="form-input" placeholder="Full address">
+            </div>
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Latitude *</label>
+                <input type="text" name="lat" required class="form-input" placeholder="18.7614">
+            </div>
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Longitude *</label>
+                <input type="text" name="lng" required class="form-input" placeholder="73.8631">
+            </div>
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Price (₹) *</label>
+                <input type="number" name="price" required class="form-input" placeholder="50">
+            </div>
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Unit</label>
+                <select name="unit" class="form-input">
+                    <option value="hr">Per Hour</option>
+                    <option value="day">Per Day</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Vehicle Type *</label>
+                <select name="size" class="form-input">
+                    <option value="Car">Car</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Bike">Bike</option>
+                    <option value="Truck">Truck</option>
+                    <option value="EV">EV</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Total Slots *</label>
+                <input type="number" name="total_slots" required class="form-input" placeholder="20" min="1">
+            </div>
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider">Photo URL</label>
+                <input type="text" name="photo" class="form-input" placeholder="https://... (optional)">
+            </div>
+            <div class="flex items-center gap-4 col-span-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_ev" value="on" class="w-4 h-4 accent-emerald-400">
+                    <span class="text-sm text-white/70">⚡ EV Charging</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="handicap" value="on" class="w-4 h-4 accent-blue-400">
+                    <span class="text-sm text-white/70">♿ Handicap Friendly</span>
+                </label>
+            </div>
+            <div class="col-span-2 flex gap-3 mt-2">
+                <button type="submit" class="btn-primary flex-1 py-3">Add Parking Area</button>
+                <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')"
+                    class="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white transition font-semibold">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

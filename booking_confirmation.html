@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.confirm-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 28px;
+}
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.detail-row:last-child { border-bottom: none; }
+</style>
+
+<div class="max-w-lg mx-auto p-6 pt-10">
+
+    <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-emerald-500/20 border-2 border-emerald-500/40 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <i class="fas fa-check-circle text-emerald-400 text-4xl"></i>
+        </div>
+        <h1 class="text-3xl font-black text-white">Booking Confirmed!</h1>
+        <p class="text-white/50 mt-2">Your parking slot has been reserved successfully.</p>
+    </div>
+
+    <div class="confirm-card p-6 mb-5">
+        <div class="flex items-center gap-3 mb-5 pb-4 border-b border-white/05">
+            <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <i class="fas fa-parking text-blue-400"></i>
+            </div>
+            <div>
+                <div class="font-black text-white text-lg">{{ booking.spot_name }}</div>
+                <div class="text-white/40 text-xs">{{ booking.spot_address }}</div>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <span class="text-white/50 text-sm">Booking ID</span>
+            <span class="font-mono font-bold text-indigo-400">#{{ booking.id }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="text-white/50 text-sm">Payment Method</span>
+            <span class="font-bold text-sm">
+                {% if booking.payment_method == 'ONLINE' %}
+                    <span class="text-emerald-400">💳 Online Payment</span>
+                {% else %}
+                    <span class="text-yellow-400">💵 Pay at Parking</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="text-white/50 text-sm">Amount</span>
+            <span class="font-black text-emerald-400 text-lg">₹{{ booking.amount }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="text-white/50 text-sm">Status</span>
+            <span class="inline-block bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                {{ booking.status }}
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="text-white/50 text-sm">Booked On</span>
+            <span class="text-white/70 text-sm font-semibold">
+                {{ booking.booking_time.strftime('%d %b %Y at %H:%M') if booking.booking_time else 'N/A' }}
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="text-white/50 text-sm">Vehicle No.</span>
+            <span class="font-mono font-bold text-white text-sm">{{ booking.vehicle_number or '—' }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="text-white/50 text-sm">Payment Ref</span>
+            <span class="font-mono text-white/40 text-xs">{{ booking.payment_id }}</span>
+        </div>
+    </div>
+
+    <div id="qr-box" class="confirm-card p-5 mb-5 text-center">
+        <p class="text-xs text-white/40 mb-3 uppercase tracking-wider font-semibold">Booking QR Code</p>
+        <div id="qrcode" class="flex justify-center"></div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 mb-4">
+        <a href="/feedback/{{ booking.id }}"
+           class="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 py-3 rounded-2xl font-bold text-sm hover:bg-yellow-500/20 transition">
+            <i class="fas fa-star"></i> Review
+        </a>
+        <a href="/profile"
+           class="flex items-center justify-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 py-3 rounded-2xl font-bold text-sm hover:bg-indigo-500/20 transition">
+            <i class="fas fa-history"></i> Bookings
+        </a>
+        <button onclick="downloadPDF()"
+           class="flex items-center justify-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 py-3 rounded-2xl font-bold text-sm hover:bg-emerald-500/20 transition">
+            <i class="fas fa-download"></i> PDF
+        </button>
+    </div>
+
+    <a href="/search"
+       class="block w-full text-center bg-emerald-600 hover:bg-emerald-500 transition py-4 rounded-2xl font-black text-lg">
+        Find Another Spot
+    </a>
+
+    {% if booking.payment_method == 'COD' %}
+    <div class="mt-5 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 text-center">
+        <p class="text-yellow-400 text-sm font-semibold">
+            <i class="fas fa-info-circle mr-2"></i>
+            Please pay <strong>₹{{ booking.spot_price or booking.amount }}</strong>/{{ 'hr' }} at the parking counter.
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+new QRCode(document.getElementById("qrcode"), {
+    text: "SMARTPARK-BOOKING-#{{ booking.id }}-{{ booking.payment_id }}",
+    width: 140,
+    height: 140,
+    colorDark: "#ffffff",
+    colorLight: "transparent",
+    correctLevel: QRCode.CorrectLevel.M
+});
+
+async function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+    // Header bar
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 0, 210, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Park Smarter", 15, 12);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Booking Receipt", 15, 20);
+    doc.text("Chakan, Pune — smartpark.in", 210 - 15, 20, { align: "right" });
+
+    // Confirmed badge area
+    doc.setFillColor(240, 253, 244);
+    doc.roundedRect(15, 35, 180, 22, 4, 4, "F");
+    doc.setTextColor(5, 150, 105);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("✓  Booking Confirmed", 105, 49, { align: "center" });
+
+    // Details table
+    const rows = [
+        ["Booking ID",     "#{{ booking.id }}"],
+        ["Parking Spot",   "{{ booking.spot_name }}"],
+        ["Address",        "{{ booking.spot_address }}"],
+        ["Amount Paid",    "Rs. {{ booking.amount }}"],
+        ["Payment Method", "{{ booking.payment_method }}"],
+        ["Payment Ref",    "{{ booking.payment_id }}"],
+        ["Vehicle No.",    "{{ booking.vehicle_number or '—' }}"],
+        ["Status",         "{{ booking.status | upper }}"],
+        ["Booked On",      "{{ booking.booking_time.strftime('%d %b %Y  %H:%M') if booking.booking_time else 'N/A' }}"],
+    ];
+
+    let y = 68;
+    doc.setFontSize(10);
+    rows.forEach(([label, val], i) => {
+        doc.setFillColor(i % 2 === 0 ? 248 : 255, i % 2 === 0 ? 250 : 255, i % 2 === 0 ? 252 : 255);
+        doc.rect(15, y, 180, 9, "F");
+        doc.setTextColor(100, 116, 139);
+        doc.setFont("helvetica", "normal");
+        doc.text(label, 20, y + 6);
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.text(String(val), 100, y + 6);
+        y += 9;
+    });
+
+    // QR code image
+    const qrCanvas = document.querySelector("#qrcode canvas");
+    if (qrCanvas) {
+        const qrImg = qrCanvas.toDataURL("image/png");
+        doc.addImage(qrImg, "PNG", 75, y + 8, 60, 60);
+        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text("Show this QR code at the parking entrance", 105, y + 74, { align: "center" });
+    }
+
+    // Footer
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 282, 210, 15, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.text("This is a system-generated receipt. No signature required.", 105, 291, { align: "center" });
+
+    doc.save(`SmartPark-Booking-{{ booking.id }}.pdf`);
+}
+</script>
+
+{% endblock %}

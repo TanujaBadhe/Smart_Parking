@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.field-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 0.3rem;
+    margin-left: 0.25rem;
+}
+.field-input {
+    width: 100%;
+    background: rgba(10,10,20,0.7);
+    padding: 0.85rem 1rem;
+    border-radius: 0.85rem;
+    outline: none;
+    border: 1.5px solid rgba(255,255,255,0.07);
+    color: #fff;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+.field-input:focus { border-color: #10b981; }
+select.field-input option { background: #0f172a; }
+
+.toggle-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.65rem 1rem;
+    border-radius: 0.75rem;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    transition: all 0.2s;
+    user-select: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+.toggle-chip input[type=checkbox] { display: none; }
+.toggle-chip.active-ev   { border-color: #10b981; background: rgba(16,185,129,0.15); color: #10b981; }
+.toggle-chip.active-cctv { border-color: #3b82f6; background: rgba(59,130,246,0.15); color: #60a5fa; }
+.toggle-chip.active-hc   { border-color: #a78bfa; background: rgba(167,139,250,0.15); color: #a78bfa; }
+
+.section-card {
+    background: rgba(255,255,255,0.03);
+    border: 1.5px solid rgba(255,255,255,0.05);
+    border-radius: 1.15rem;
+    padding: 1.1rem;
+}
+.section-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.9rem;
+}
+
+.lease-card {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.07);
+    border-radius: 1.15rem;
+    padding: 1.1rem;
+    transition: background 0.2s;
+}
+.lease-card:hover { background: rgba(255,255,255,0.08); }
+
+.mini-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+}
+</style>
+
+<div class="max-w-7xl mx-auto px-4 py-8" style="display:grid; grid-template-columns: 3fr 2fr; gap: 2rem;">
+
+    <!-- ───── LEFT: FORM ───── -->
+    <div class="glass p-8 rounded-[36px] border border-white/5">
+
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.75rem;">
+            <div style="width:42px;height:42px;border-radius:12px;background:rgba(16,185,129,0.2);display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-plus" style="color:#10b981;"></i>
+            </div>
+            <div>
+                <h2 style="font-size:1.25rem;font-weight:900;color:#fff;margin:0;">List Your Parking Space</h2>
+                <p style="font-size:0.75rem;color:#475569;margin:0;">Earn monthly by renting out your spot</p>
+            </div>
+        </div>
+
+        {% if not session_user %}
+        <div style="background:rgba(234,179,8,0.08);border:1.5px solid rgba(234,179,8,0.25);border-radius:0.85rem;padding:0.7rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+            <i class="fas fa-info-circle" style="color:#eab308;"></i>
+            <p style="color:#fde047;font-size:0.8rem;font-weight:600;margin:0;">
+                You need to <a href="/login" style="text-decoration:underline;color:#fbbf24;">log in</a> before submitting. You can still fill the form.
+            </p>
+        </div>
+        {% endif %}
+
+        <form action="/submit-lease" method="post" id="leaseForm">
+            <div style="display:flex;flex-direction:column;gap:1rem;">
+
+                <!-- Owner Info -->
+                <div class="section-card">
+                    <p class="section-title" style="color:#10b981;"><i class="fas fa-user-circle"></i> Owner Information</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+                        <div>
+                            <label class="field-label">Your Phone Number</label>
+                            <input type="tel" name="contact_phone" placeholder="e.g. 9876543210" maxlength="15" required
+                                   value="{{ session_user.phone if session_user else '' }}" class="field-input">
+                        </div>
+                        <div>
+                            <label class="field-label">Space / Spot Name</label>
+                            <input type="text" name="name" placeholder="e.g. My Private Garage" required class="field-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="section-card">
+                    <p class="section-title" style="color:#60a5fa;"><i class="fas fa-map-marker-alt"></i> Location</p>
+                    <div>
+                        <label class="field-label">Full Spot Address</label>
+                        <input type="text" name="spot_location" placeholder="e.g. Plot 12, Near NH-48, Chakan, Pune" required class="field-input">
+                    </div>
+                </div>
+
+                <!-- AI Price Suggestion -->
+                <div class="section-card" style="border-color:rgba(168,85,247,0.25);">
+                    <p class="section-title" style="color:#a855f7;"><i class="fas fa-robot"></i> AI Price Suggestion</p>
+                    <p style="font-size:0.78rem;color:#64748b;margin-bottom:0.75rem;">Get a fair market price suggestion based on your spot type and amenities.</p>
+                    <button type="button" id="ai-price-btn" onclick="getAIPrice()"
+                        style="width:100%;background:rgba(168,85,247,0.15);border:1.5px solid rgba(168,85,247,0.3);color:#c084fc;padding:0.65rem;border-radius:0.75rem;font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(168,85,247,0.3)'" onmouseout="this.style.background='rgba(168,85,247,0.15)'">
+                        <i class="fas fa-magic mr-2"></i> Suggest Price with AI
+                    </button>
+                    <div id="ai-price-result" style="display:none;margin-top:0.85rem;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:0.75rem;padding:0.85rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                            <span style="font-size:0.75rem;color:#a855f7;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">AI Suggested Price</span>
+                            <button type="button" onclick="applyAIPrice()" style="background:#a855f7;color:#fff;border:none;padding:0.3rem 0.75rem;border-radius:0.5rem;font-size:0.75rem;font-weight:700;cursor:pointer;">Use This</button>
+                        </div>
+                        <div id="ai-price-value" style="font-size:1.8rem;font-weight:900;color:#c084fc;">₹0</div>
+                        <div id="ai-price-breakdown" style="font-size:0.72rem;color:#64748b;margin-top:0.4rem;"></div>
+                        <div id="ai-price-tip" style="font-size:0.72rem;color:#94a3b8;margin-top:0.4rem;font-style:italic;"></div>
+                    </div>
+                </div>
+
+                <!-- Duration & Price -->
+                <div class="section-card">
+                    <p class="section-title" style="color:#c084fc;"><i class="fas fa-calendar-alt"></i> Duration & Pricing</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:0.85rem;">
+                        <div>
+                            <label class="field-label">Lease Start Date</label>
+                            <input type="date" name="lease_start_date" required class="field-input" id="lease_start">
+                        </div>
+                        <div>
+                            <label class="field-label">Lease End Date</label>
+                            <input type="date" name="lease_end_date" required class="field-input" id="lease_end">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="field-label">Monthly Price (₹)</label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:#10b981;font-weight:900;font-size:1.1rem;">₹</span>
+                            <input type="number" name="monthly_price" placeholder="e.g. 2500" min="1" step="1" required
+                                   class="field-input" style="padding-left:2.2rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle -->
+                <div class="section-card">
+                    <p class="section-title" style="color:#fb923c;"><i class="fas fa-car"></i> Vehicle Details</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+                        <div>
+                            <label class="field-label">Spot Size / Type</label>
+                            <select name="v_type" class="field-input">
+                                <option value="Car">🚗 Sedan / Hatchback</option>
+                                <option value="SUV">🚙 SUV / Large Vehicle</option>
+                                <option value="Bike">🏍️ Two-Wheeler</option>
+                                <option value="Truck">🚛 Truck / Heavy</option>
+                                <option value="EV">⚡ EV / Electric</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">Allowed Vehicles</label>
+                            <select name="allowed_vehicles" class="field-input">
+                                <option value="All">All Types</option>
+                                <option value="Car Only">Cars Only</option>
+                                <option value="Bike Only">Bikes Only</option>
+                                <option value="Car & Bike">Cars & Bikes</option>
+                                <option value="Heavy Only">Heavy Vehicles</option>
+                                <option value="EV Only">EVs Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amenities -->
+                <div class="section-card">
+                    <p class="section-title" style="color:#22d3ee;"><i class="fas fa-star"></i> Spot Amenities</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+                        <label class="toggle-chip" id="chip-ev" onclick="toggleChip(this,'active-ev')">
+                            <input type="checkbox" name="is_ev" value="True">
+                            <i class="fas fa-bolt"></i> EV Charging
+                        </label>
+                        <label class="toggle-chip" id="chip-cctv" onclick="toggleChip(this,'active-cctv')">
+                            <input type="checkbox" name="has_cctv" value="True">
+                            <i class="fas fa-video"></i> CCTV / Security
+                        </label>
+                        <label class="toggle-chip" id="chip-hc" onclick="toggleChip(this,'active-hc')">
+                            <input type="checkbox" name="is_h" value="True">
+                            <i class="fas fa-wheelchair"></i> Handicap Friendly
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Terms & Conditions -->
+                <div class="section-card" style="border-color:rgba(234,179,8,0.2);">
+                    <p class="section-title" style="color:#fbbf24;"><i class="fas fa-file-contract"></i> Terms &amp; Conditions</p>
+                    <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.07);border-radius:0.75rem;padding:1rem;max-height:180px;overflow-y:auto;margin-bottom:1rem;">
+                        <ol style="color:#94a3b8;font-size:0.8rem;line-height:1.7;padding-left:1.2rem;margin:0;">
+                            <li>The parking space shall be used only for parking a legally registered vehicle.</li>
+                            <li>The lessee shall use only the designated parking space allotted under this agreement.</li>
+                            <li>The lessee is solely responsible for the vehicle and any personal belongings kept therein.</li>
+                            <li>The lessor shall not be liable for any theft, loss, damage, accident, fire, or vandalism involving the vehicle.</li>
+                            <li>The lessee shall not block entrances, exits, driveways, emergency access routes, or customer parking areas.</li>
+                            <li>The lessee shall comply with all property rules and applicable laws.</li>
+                            <li>Any fines, penalties, towing charges, damages, claims, or liabilities arising from the lessee's use of the parking space shall be borne solely by the lessee.</li>
+                            <li>The parking space shall not be subleased, transferred, or assigned without the lessor's written consent.</li>
+                            <li>The lessor reserves the right to terminate the lease upon notice if the lessee violates these terms or if the parking arrangement causes complaints, inconvenience, safety concerns, or disruption to business operations.</li>
+                            <li>Use of the parking space is entirely at the lessee's own risk.</li>
+                        </ol>
+                        <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.07);color:#94a3b8;font-size:0.78rem;font-style:italic;line-height:1.6;">
+                            <strong style="color:#fbbf24;">Declaration:</strong> "By signing this agreement, the lessee acknowledges and accepts full responsibility for the use of the parking space and agrees to abide by the above terms and conditions."
+                        </div>
+                    </div>
+                    <label id="terms-label" style="display:flex;align-items:flex-start;gap:0.75rem;cursor:pointer;padding:0.75rem 1rem;border-radius:0.75rem;border:1.5px solid rgba(234,179,8,0.15);background:rgba(234,179,8,0.05);transition:all 0.2s;">
+                        <input type="checkbox" id="terms_accept" style="width:18px;height:18px;margin-top:1px;accent-color:#10b981;cursor:pointer;flex-shrink:0;">
+                        <span style="font-size:0.82rem;font-weight:600;color:#fde68a;line-height:1.5;">
+                            I have read and agree to the Terms &amp; Conditions above and accept full responsibility for the use of the parking space.
+                        </span>
+                    </label>
+                </div>
+
+                <button type="submit" id="submitBtn"
+                        style="width:100%;background:rgba(16,185,129,0.3);padding:1rem;border-radius:1rem;font-weight:900;color:rgba(255,255,255,0.4);font-size:1rem;border:1.5px solid rgba(16,185,129,0.2);cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:0.5rem;transition:all 0.3s;"
+                        disabled>
+                    <i class="fas fa-lock"></i> ACCEPT TERMS TO CONTINUE
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ───── RIGHT: MY LISTINGS ───── -->
+    <div class="glass p-6 rounded-[36px] border border-white/5" style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+            <h2 style="font-size:1.1rem;font-weight:900;color:#fff;display:flex;align-items:center;gap:0.5rem;">
+                <i class="fas fa-list-ul" style="color:#10b981;"></i> My Listings
+            </h2>
+            {% if leases %}
+            <span style="font-size:0.7rem;background:rgba(255,255,255,0.08);padding:0.2rem 0.75rem;border-radius:999px;color:rgba(255,255,255,0.4);font-weight:700;">
+                {{ leases|length }} total
+            </span>
+            {% endif %}
+        </div>
+
+        <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.85rem;max-height:680px;padding-right:2px;">
+            {% if leases %}
+                {% for lease in leases %}
+                <div class="lease-card">
+                    <!-- Name + status -->
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+                        <div style="flex:1;min-width:0;">
+                            <p style="font-weight:700;color:#fff;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                {{ lease.spot_name }}
+                            </p>
+                            <p style="font-size:0.72rem;color:#64748b;margin-top:2px;">
+                                <i class="fas fa-car" style="margin-right:3px;"></i>{{ lease.vehicle_type }}
+                            </p>
+                        </div>
+                        {% if lease.status == 'active' %}
+                            <span class="mini-badge" style="background:rgba(16,185,129,0.15);color:#10b981;margin-left:0.5rem;flex-shrink:0;">
+                                <i class="fas fa-circle" style="font-size:5px;"></i> Active
+                            </span>
+                        {% else %}
+                            <span class="mini-badge" style="background:rgba(239,68,68,0.15);color:#f87171;margin-left:0.5rem;flex-shrink:0;">
+                                <i class="fas fa-times-circle"></i> Cancelled
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Price -->
+                    <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:0.75rem;padding:0.6rem;text-align:center;margin-bottom:0.75rem;">
+                        <p style="font-size:0.65rem;color:rgba(52,211,153,0.6);margin-bottom:2px;text-transform:uppercase;letter-spacing:0.05em;">Monthly Price</p>
+                        <p style="font-size:1.6rem;font-weight:900;color:#10b981;">₹{{ "%.0f"|format(lease.monthly_price) }}</p>
+                    </div>
+
+                    <!-- Dates -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.75rem;">
+                        <div style="background:rgba(0,0,0,0.3);border-radius:0.65rem;padding:0.5rem;text-align:center;">
+                            <p style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-bottom:2px;">From</p>
+                            <p style="font-weight:700;color:#fff;font-size:0.72rem;">
+                                {{ lease.lease_start_date.strftime('%d %b %Y') if lease.lease_start_date else '—' }}
+                            </p>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.3);border-radius:0.65rem;padding:0.5rem;text-align:center;">
+                            <p style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-bottom:2px;">Until</p>
+                            <p style="font-weight:700;color:#fff;font-size:0.72rem;">
+                                {{ lease.lease_end_date.strftime('%d %b %Y') if lease.lease_end_date else '—' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Lease ID -->
+                    <p style="font-size:0.65rem;color:rgba(255,255,255,0.2);margin-bottom:0.65rem;">
+                        <i class="fas fa-hashtag"></i> Lease ID: {{ lease.id }}
+                    </p>
+
+                    {% if lease.status == 'active' %}
+                    <form action="/cancel-lease/{{ lease.id }}" method="post"
+                          onsubmit="return confirm('Cancel this lease listing?')">
+                        <button type="submit"
+                                style="width:100%;color:#f87171;font-weight:700;background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.2);padding:0.55rem;border-radius:0.75rem;cursor:pointer;font-size:0.82rem;transition:all 0.2s;"
+                                onmouseover="this.style.background='rgba(239,68,68,0.8)';this.style.color='#fff';"
+                                onmouseout="this.style.background='rgba(239,68,68,0.1)';this.style.color='#f87171';">
+                            <i class="fas fa-times-circle"></i> Cancel Lease
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;opacity:0.2;padding:3rem 0;text-align:center;">
+                    <i class="fas fa-parking" style="font-size:4rem;display:block;margin-bottom:0.75rem;"></i>
+                    <p style="font-style:italic;font-size:0.9rem;">No lease listings yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function toggleChip(label, activeClass) {
+        const cb = label.querySelector('input[type=checkbox]');
+        cb.checked = !cb.checked;
+        ['active-ev','active-cctv','active-hc'].forEach(c => label.classList.remove(c));
+        if (cb.checked) label.classList.add(activeClass);
+    }
+
+    // ── AI PRICE SUGGESTION ──
+    let aiSuggestedPrice = null;
+    async function getAIPrice() {
+        const vtype = document.querySelector('select[name="v_type"]').value;
+        const isEv  = document.getElementById('chip-ev').classList.contains('active-ev');
+        const isCctv= document.getElementById('chip-cctv').classList.contains('active-cctv');
+        const isHc  = document.getElementById('chip-hc').classList.contains('active-hc');
+        const btn   = document.getElementById('ai-price-btn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Analysing market…';
+        btn.disabled = true;
+        try {
+            const res  = await fetch(`/api/ai-price?v_type=${vtype}&is_ev=${isEv}&has_cctv=${isCctv}&is_h=${isHc}`);
+            const data = await res.json();
+            aiSuggestedPrice = data.suggested_price;
+            document.getElementById('ai-price-value').textContent = '₹' + data.suggested_price + '/month';
+            document.getElementById('ai-price-breakdown').textContent =
+                data.breakdown.map(b => b.label + ': ₹' + b.amount).join('  •  ');
+            document.getElementById('ai-price-tip').textContent = data.tip;
+            document.getElementById('ai-price-result').style.display = 'block';
+        } catch(e) { alert('Could not fetch AI price. Try again.'); }
+        btn.innerHTML = '<i class="fas fa-magic mr-2"></i> Suggest Price with AI';
+        btn.disabled = false;
+    }
+    function applyAIPrice() {
+        if (aiSuggestedPrice) document.querySelector('input[name="monthly_price"]').value = aiSuggestedPrice;
+    }
+
+    const s = document.getElementById('lease_start');
+    const e = document.getElementById('lease_end');
+    if (s && e) {
+        const today = new Date().toISOString().split('T')[0];
+        s.min = today;
+        s.addEventListener('change', () => {
+            e.min = s.value;
+            if (e.value && e.value < s.value) e.value = '';
+        });
+    }
+
+    const termsCheckbox = document.getElementById('terms_accept');
+    const submitBtn = document.getElementById('submitBtn');
+    const termsLabel = document.getElementById('terms-label');
+
+    termsCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+            submitBtn.disabled = false;
+            submitBtn.style.background = 'linear-gradient(135deg,#059669,#10b981)';
+            submitBtn.style.color = '#fff';
+            submitBtn.style.border = 'none';
+            submitBtn.style.cursor = 'pointer';
+            submitBtn.style.boxShadow = '0 8px 25px rgba(16,185,129,0.3)';
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> SUBMIT LEASE LISTING';
+            termsLabel.style.borderColor = 'rgba(16,185,129,0.4)';
+            termsLabel.style.background = 'rgba(16,185,129,0.08)';
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.style.background = 'rgba(16,185,129,0.3)';
+            submitBtn.style.color = 'rgba(255,255,255,0.4)';
+            submitBtn.style.border = '1.5px solid rgba(16,185,129,0.2)';
+            submitBtn.style.cursor = 'not-allowed';
+            submitBtn.style.boxShadow = 'none';
+            submitBtn.innerHTML = '<i class="fas fa-lock"></i> ACCEPT TERMS TO CONTINUE';
+            termsLabel.style.borderColor = 'rgba(234,179,8,0.15)';
+            termsLabel.style.background = 'rgba(234,179,8,0.05)';
+        }
+    });
+</script>
+{% endblock %}

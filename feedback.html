@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-md mx-auto p-6 pt-10">
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-yellow-500/20 border border-yellow-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-star text-yellow-400 text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-black">Rate Your Experience</h1>
+        <p class="text-white/40 text-sm mt-2">{{ booking.spot_name }}</p>
+    </div>
+
+    <div class="glass rounded-3xl p-6">
+        <form action="/feedback/{{ booking.id }}" method="POST" class="space-y-6">
+            <div>
+                <label class="block text-sm text-white/50 mb-4 text-center uppercase tracking-wider font-semibold">Your Rating</label>
+                <div class="flex justify-center gap-3" id="star-row">
+                    {% for i in range(1, 6) %}
+                    <label class="cursor-pointer">
+                        <input type="radio" name="rating" value="{{ i }}" class="hidden" required {% if i == 5 %}checked{% endif %}>
+                        <span class="star text-4xl transition-all duration-150 hover:scale-110 block"
+                              data-value="{{ i }}"
+                              onclick="setRating({{ i }})">☆</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs text-white/40 mb-2 uppercase tracking-wider font-semibold">Comment (optional)</label>
+                <textarea name="comment" rows="4" placeholder="Tell us about your parking experience..."
+                    class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white text-sm outline-none focus:border-yellow-500 transition resize-none placeholder:text-white/20"></textarea>
+            </div>
+
+            <button type="submit"
+                class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-2xl text-lg transition">
+                Submit Feedback
+            </button>
+            <a href="/profile" class="block text-center text-white/30 hover:text-white/60 text-sm transition">
+                Skip for now
+            </a>
+        </form>
+    </div>
+</div>
+
+<script>
+function setRating(val) {
+    document.querySelectorAll('.star').forEach((s, i) => {
+        s.textContent = (i + 1) <= val ? '★' : '☆';
+        s.style.color = (i + 1) <= val ? '#facc15' : 'rgba(255,255,255,0.2)';
+    });
+    document.querySelectorAll('input[name="rating"]').forEach((r, i) => {
+        r.checked = (i + 1) === val;
+    });
+}
+document.addEventListener('DOMContentLoaded', () => setRating(5));
+</script>
+
+{% endblock %}

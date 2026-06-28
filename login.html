@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto p-12 min-h-screen grid grid-cols-1 md:grid-cols-2 gap-16 items-center bg-slate-950 text-white">
+    
+    <div class="flex flex-col items-center text-center">
+        <img src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c"
+             alt="Phone & Parking Illustration"
+             class="w-full max-w-md mb-8 drop-shadow-[0_20px_20px_rgba(59,130,246,0.08)]">
+        <h2 class="text-3xl font-extrabold mb-3">Welcome Back, <span class="text-blue-400">Parker.</span></h2>
+        <p class="text-slate-400 max-w-md">Log in to manage your listings and discover the nearest spots instantly on your device.</p>
+    </div>
+
+    <div class="glass p-12 rounded-[50px] border border-white/5">
+        <h1 class="text-4xl font-extrabold mb-10 flex items-center gap-3">
+            <i class="fas fa-sign-in-alt text-emerald-400"></i> Log In
+        </h1>
+
+        <div id="error-message" class="hidden bg-red-500/10 border border-red-500 text-red-400 p-4 rounded-xl mb-6"></div>
+
+        <form id="login-form" class="space-y-6">
+            <div>
+                <label class="text-sm text-slate-400 ml-1 mb-2 block">Phone Number</label>
+                <div class="relative">
+                    <i class="fas fa-phone-alt absolute left-5 top-1/2 -translate-y-1/2 text-slate-600"></i>
+                    <input type="tel" name="phone_number" placeholder="+1234567890" required 
+                           class="w-full bg-slate-900 p-5 pl-14 rounded-2xl outline-none border border-white/5 focus:border-emerald-500 text-lg">
+                </div>
+            </div>
+
+            <div>
+                <label class="text-sm text-slate-400 ml-1 mb-2 block">Password</label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-5 top-1/2 -translate-y-1/2 text-slate-600"></i>
+                    <input type="password" name="password" id="login-password" placeholder="••••••••" required 
+                           class="w-full bg-slate-900 p-5 pl-14 pr-14 rounded-2xl outline-none border border-white/5 focus:border-emerald-500 text-lg">
+                    <button type="button" onclick="togglePassword('login-password', 'login-eye')"
+                            class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-400 transition">
+                        <i id="login-eye" class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-emerald-600 py-5 rounded-2xl font-black text-lg hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/20">
+                LOG IN
+            </button>
+        </form>
+
+        <p class="text-center mt-6">
+            <a href="/forgot-password" class="text-slate-400 hover:text-emerald-400 text-sm transition">Forgot your password?</a>
+        </p>
+
+        <p class="text-center text-slate-400 mt-6">
+            New to the network? 
+            <a href="/signup" class="text-emerald-400 font-bold hover:text-emerald-300">Create an Account</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const errorMsg = document.getElementById('error-message');
+        errorMsg.classList.add('hidden');
+
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => data[key] = value);
+
+        try {
+            const response = await fetch('/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(data).toString(),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('access_token', result.access_token);
+                localStorage.setItem('token_type', result.token_type);
+                window.location.href = '/search';
+            } else {
+                errorMsg.textContent = result.detail || 'Login failed. Please try again.';
+                errorMsg.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error during login:', error);
+            errorMsg.textContent = 'An unexpected error occurred.';
+            errorMsg.classList.remove('hidden');
+        }
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('msg') && urlParams.get('msg') === 'registered') {
+        alert('Registration successful! Please log in.');
+    }
+    if (urlParams.has('msg') && urlParams.get('msg') === 'password_reset') {
+        const banner = document.createElement('div');
+        banner.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-8 py-4 rounded-2xl shadow-xl font-semibold text-lg';
+        banner.textContent = '✅ Password reset! Please log in with your new password.';
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 5000);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto mt-10">
+    <h2 class="text-2xl font-bold mb-6">Pending <span class="text-blue-400">Moderation</span></h2>
+    
+    <div class="overflow-hidden glass-panel rounded-2xl border border-slate-700">
+        <table class="w-full text-left">
+            <thead class="bg-slate-800/50 text-slate-400 text-xs uppercase">
+                <tr>
+                    <th class="px-6 py-4">Spot Name</th>
+                    <th class="px-6 py-4">Coordinates</th>
+                    <th class="px-6 py-4">Price</th>
+                    <th class="px-6 py-4">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700">
+                {% for item in pending %}
+                <tr>
+                    <td class="px-6 py-4 font-semibold">{{ item.name }}</td>
+                    <td class="px-6 py-4 text-slate-400 text-sm">{{ item.lat }}, {{ item.lng }}</td>
+                    <td class="px-6 py-4 text-emerald-400">{{ item.price }}</td>
+                    <td class="px-6 py-4">
+                        <button class="bg-emerald-600 px-4 py-1 rounded-md text-sm hover:bg-emerald-500">Approve</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

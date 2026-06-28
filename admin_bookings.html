@@ -1,0 +1,60 @@
+{% extends "admin_base.html" %}
+{% set active = "bookings" %}
+{% block content %}
+
+<div class="mb-8">
+    <h2 class="text-2xl font-black">All Bookings</h2>
+    <p class="text-white/40 text-sm mt-1">{{ bookings | length }} total reservations</p>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>User Phone</th>
+                <th>Vehicle No.</th>
+                <th>Parking Area</th>
+                <th>Payment</th>
+                <th>Amount</th>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in bookings %}
+            <tr>
+                <td class="text-white/40 font-mono text-xs">#{{ b.id }}</td>
+                <td class="font-mono text-sm text-white/70">{{ b.user_phone or '—' }}</td>
+                <td class="font-mono font-bold text-sm">{{ b.vehicle_number or '—' }}</td>
+                <td>
+                    <div class="font-semibold text-sm">{{ b.spot_name or 'N/A' }}</div>
+                    <div class="text-white/30 text-xs font-mono">{{ b.payment_id }}</div>
+                </td>
+                <td>
+                    {% if b.payment_method == 'ONLINE' %}
+                        <span class="badge badge-green">Online</span>
+                    {% else %}
+                        <span class="badge badge-yellow">COD</span>
+                    {% endif %}
+                </td>
+                <td class="text-emerald-400 font-bold">₹{{ b.amount or 0 }}</td>
+                <td class="text-white/50 text-xs">{{ b.booking_time.strftime('%d %b %Y, %H:%M') if b.booking_time else '—' }}</td>
+                <td>
+                    {% if b.status == 'active' %}
+                        <span class="badge badge-green">Active</span>
+                    {% elif b.status == 'cancelled' %}
+                        <span class="badge badge-red">Cancelled</span>
+                    {% else %}
+                        <span class="badge badge-yellow">{{ b.status }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-white/30 py-10">No bookings yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "admin_base.html" %}
+{% set active = "users" %}
+{% block content %}
+
+<div class="mb-8">
+    <h2 class="text-2xl font-black">Registered Users</h2>
+    <p class="text-white/40 text-sm mt-1">{{ users | length }} total users</p>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Phone Number</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td class="text-white/40 font-mono text-xs">#{{ user.id }}</td>
+                <td>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-indigo-600/30 rounded-full flex items-center justify-center text-xs font-bold text-indigo-400">
+                            {{ user.name[0].upper() }}
+                        </div>
+                        <span class="font-semibold text-sm">{{ user.name }}</span>
+                    </div>
+                </td>
+                <td class="font-mono text-sm text-white/70">{{ user.phone_number }}</td>
+                <td><span class="badge badge-green">Active</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-white/30 py-10">No users registered yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

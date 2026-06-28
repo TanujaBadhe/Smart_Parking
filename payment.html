@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto glass p-10 rounded-[40px] text-center">
+    <h2 class="text-2xl font-bold mb-4">Confirm Reservation</h2>
+    <p class="text-slate-400 mb-6">Total Due: <span class="text-emerald-400 font-bold">${{ area.price }}</span></p>
+    <div class="space-y-4">
+        <input type="text" placeholder="Card Detail" class="w-full bg-slate-900 p-4 rounded-xl border border-slate-700">
+        <button onclick="alert('Payment Successful!'); window.location.href='/'" class="w-full bg-blue-600 p-4 rounded-xl font-bold">Pay Now</button>
+    </div>
+</div>
+{% endblock %}

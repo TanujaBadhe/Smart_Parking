@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park Smarter Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #0a0f1e; color: white; }
+        .sidebar { background: rgba(255,255,255,0.03); border-right: 1px solid rgba(255,255,255,0.07); }
+        .nav-link { display:flex; align-items:center; gap:12px; padding:12px 20px; border-radius:12px; color:rgba(255,255,255,0.6); font-weight:600; font-size:14px; transition:all 0.2s; text-decoration:none; }
+        .nav-link:hover, .nav-link.active { background:rgba(99,102,241,0.15); color:#818cf8; }
+        .stat-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:24px; }
+        .glass { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
+        table { width:100%; border-collapse:collapse; }
+        th { background:rgba(255,255,255,0.05); padding:12px 16px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:rgba(255,255,255,0.5); }
+        td { padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:14px; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:rgba(255,255,255,0.02); }
+        .badge { display:inline-block; padding:3px 10px; border-radius:99px; font-size:11px; font-weight:700; text-transform:uppercase; }
+        .badge-green { background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+        .badge-red { background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+        .badge-yellow { background:rgba(234,179,8,0.15); color:#facc15; border:1px solid rgba(234,179,8,0.3); }
+        .form-input { width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 16px; color:white; font-size:14px; outline:none; transition:border-color 0.2s; }
+        .form-input:focus { border-color:#6366f1; }
+        .form-input option { background:#1e293b; }
+        .btn-primary { background:linear-gradient(135deg,#6366f1,#4f46e5); color:white; padding:10px 20px; border-radius:12px; font-weight:700; font-size:14px; border:none; cursor:pointer; transition:all 0.2s; }
+        .btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+        .btn-danger { background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+        .btn-danger:hover { background:rgba(239,68,68,0.3); }
+        .btn-edit { background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; text-decoration:none; }
+        .btn-edit:hover { background:rgba(99,102,241,0.3); }
+    </style>
+</head>
+<body class="min-h-screen flex">
+    <aside class="sidebar w-64 min-h-screen flex-shrink-0 flex flex-col p-4 sticky top-0 h-screen overflow-y-auto">
+        <div class="mb-8 px-4 pt-2">
+            <h1 class="text-xl font-black text-indigo-400">Park Smarter</h1>
+            <p class="text-xs text-white/30 mt-1">Admin Panel</p>
+        </div>
+        <nav class="flex flex-col gap-1">
+            <a href="/admin/dashboard" class="nav-link {% if active == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-chart-line w-5 text-center"></i> Dashboard
+            </a>
+            <a href="/admin/areas" class="nav-link {% if active == 'areas' %}active{% endif %}">
+                <i class="fas fa-map-marker-alt w-5 text-center"></i> Parking Areas
+            </a>
+            <a href="/admin/users" class="nav-link {% if active == 'users' %}active{% endif %}">
+                <i class="fas fa-users w-5 text-center"></i> Users
+            </a>
+            <a href="/admin/bookings" class="nav-link {% if active == 'bookings' %}active{% endif %}">
+                <i class="fas fa-calendar-check w-5 text-center"></i> Bookings
+            </a>
+            <a href="/admin/reports" class="nav-link {% if active == 'reports' %}active{% endif %}">
+                <i class="fas fa-file-chart-line w-5 text-center"></i> Reports
+            </a>
+        </nav>
+        <div class="mt-auto pt-4 border-t border-white/5">
+            <div class="flex items-center gap-3 px-2 mb-4">
+                <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-bold">A</div>
+                <div>
+                    <p class="text-sm font-semibold">{{ admin.username }}</p>
+                    <p class="text-xs text-white/30">Administrator</p>
+                </div>
+            </div>
+            <a href="/admin/logout" class="nav-link text-red-400 hover:text-red-300">
+                <i class="fas fa-sign-out-alt w-5 text-center"></i> Logout
+            </a>
+        </div>
+    </aside>
+    <main class="flex-1 p-8 overflow-y-auto">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

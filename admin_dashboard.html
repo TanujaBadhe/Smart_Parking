@@ -1,0 +1,116 @@
+{% extends "admin_base.html" %}
+{% set active = "dashboard" %}
+{% block content %}
+
+<div class="mb-8">
+    <h2 class="text-2xl font-black">Dashboard</h2>
+    <p class="text-white/40 text-sm mt-1">Welcome back, {{ admin.username }} — here's your system overview</p>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+    <div class="stat-card col-span-1">
+        <div class="text-3xl font-black text-indigo-400">{{ stats.total_areas }}</div>
+        <div class="text-xs text-white/40 mt-1 font-semibold uppercase tracking-wider">Parking Areas</div>
+    </div>
+    <div class="stat-card col-span-1">
+        <div class="text-3xl font-black text-blue-400">{{ stats.total_slots }}</div>
+        <div class="text-xs text-white/40 mt-1 font-semibold uppercase tracking-wider">Total Slots</div>
+    </div>
+    <div class="stat-card col-span-1">
+        <div class="text-3xl font-black text-emerald-400">{{ stats.available_slots }}</div>
+        <div class="text-xs text-white/40 mt-1 font-semibold uppercase tracking-wider">Available</div>
+    </div>
+    <div class="stat-card col-span-1">
+        <div class="text-3xl font-black text-red-400">{{ stats.occupied_slots }}</div>
+        <div class="text-xs text-white/40 mt-1 font-semibold uppercase tracking-wider">Occupied</div>
+    </div>
+    <div class="stat-card col-span-1">
+        <div class="text-3xl font-black text-yellow-400">{{ stats.total_bookings }}</div>
+        <div class="text-xs text-white/40 mt-1 font-semibold uppercase tracking-wider">Bookings</div>
+    </div>
+    <div class="stat-card col-span-1">
+        <div class="text-3xl font-black text-purple-400">{{ stats.total_users }}</div>
+        <div class="text-xs text-white/40 mt-1 font-semibold uppercase tracking-wider">Users</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="glass rounded-2xl p-6">
+        <h3 class="font-bold mb-4 text-white/80">Parking Occupancy by Area</h3>
+        <canvas id="occupancyChart" height="220"></canvas>
+    </div>
+    <div class="glass rounded-2xl p-6">
+        <h3 class="font-bold mb-4 text-white/80">Bookings — Last 7 Days</h3>
+        <canvas id="dailyChart" height="220"></canvas>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="/admin/areas" class="glass rounded-2xl p-5 flex items-center gap-4 hover:border-indigo-500/40 transition group">
+        <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-map-marker-alt text-indigo-400 text-lg"></i>
+        </div>
+        <div>
+            <div class="font-bold text-sm">Manage Areas</div>
+            <div class="text-xs text-white/40">Add, edit, delete parking areas</div>
+        </div>
+        <i class="fas fa-chevron-right ml-auto text-white/20 group-hover:text-indigo-400 transition"></i>
+    </a>
+    <a href="/admin/bookings" class="glass rounded-2xl p-5 flex items-center gap-4 hover:border-yellow-500/40 transition group">
+        <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-calendar-check text-yellow-400 text-lg"></i>
+        </div>
+        <div>
+            <div class="font-bold text-sm">View Bookings</div>
+            <div class="text-xs text-white/40">See all reservations</div>
+        </div>
+        <i class="fas fa-chevron-right ml-auto text-white/20 group-hover:text-yellow-400 transition"></i>
+    </a>
+    <a href="/admin/reports" class="glass rounded-2xl p-5 flex items-center gap-4 hover:border-emerald-500/40 transition group">
+        <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-file-alt text-emerald-400 text-lg"></i>
+        </div>
+        <div>
+            <div class="font-bold text-sm">Reports</div>
+            <div class="text-xs text-white/40">Stats & analytics</div>
+        </div>
+        <i class="fas fa-chevron-right ml-auto text-white/20 group-hover:text-emerald-400 transition"></i>
+    </a>
+</div>
+
+<script>
+const chartData = {{ chart_data | tojson }};
+const labels = chartData.map(d => d.name.length > 18 ? d.name.substring(0,18)+'…' : d.name);
+new Chart(document.getElementById('occupancyChart'), {
+    type: 'bar',
+    data: {
+        labels,
+        datasets: [
+            { label: 'Occupied', data: chartData.map(d => d.occupied), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6 },
+            { label: 'Available', data: chartData.map(d => d.available), backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 6 }
+        ]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)', font: { size: 11 } } } },
+        scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                  y: { ticks: { color: 'rgba(255,255,255,0.4)' }, grid: { color: 'rgba(255,255,255,0.05)' } } },
+        animation: { duration: 800 } }
+});
+
+const dailyData = {{ daily_data | tojson }};
+const dailyLabels = dailyData.map(d => d.day);
+const dailyCounts = dailyData.map(d => d.count);
+new Chart(document.getElementById('dailyChart'), {
+    type: 'line',
+    data: {
+        labels: dailyLabels.length ? dailyLabels : ['No data'],
+        datasets: [{ label: 'Bookings', data: dailyCounts.length ? dailyCounts : [0],
+            borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)',
+            fill: true, tension: 0.4, pointBackgroundColor: '#6366f1', pointRadius: 5 }]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)', font: { size: 11 } } } },
+        scales: { x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                  y: { ticks: { color: 'rgba(255,255,255,0.4)' }, grid: { color: 'rgba(255,255,255,0.05)' } } },
+        animation: { duration: 800 } }
+});
+</script>
+{% endblock %}

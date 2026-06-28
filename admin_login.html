@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login — Park Smarter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #0a0f1e; color: white; }
+        .glass { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+        .form-input { width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px 18px 14px 48px; color:white; font-size:15px; outline:none; transition:border-color 0.2s; }
+        .form-input:focus { border-color:#6366f1; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-indigo-400">Park Smarter</h1>
+            <p class="text-white/40 text-sm mt-1">Administrator Portal</p>
+        </div>
+
+        <div class="glass rounded-3xl p-8">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-12 h-12 bg-indigo-600/20 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-indigo-400 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">Admin Login</h2>
+                    <p class="text-white/40 text-xs">Restricted access</p>
+                </div>
+            </div>
+
+            {% if error %}
+            <div class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 mb-6 text-sm flex items-center gap-2">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form action="/admin/login" method="POST" class="space-y-5">
+                <div class="relative">
+                    <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                    <input type="text" name="username" placeholder="Username" required class="form-input">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                    <input type="password" name="password" placeholder="Password" required class="form-input">
+                </div>
+                <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 transition py-4 rounded-2xl font-black text-lg">
+                    Sign In
+                </button>
+            </form>
+
+            <p class="text-center text-white/20 text-xs mt-6">
+                Default: admin / admin123
+            </p>
+        </div>
+
+        <p class="text-center mt-6">
+            <a href="/" class="text-white/30 hover:text-white/60 text-sm transition">
+                <i class="fas fa-arrow-left mr-1"></i> Back to App
+            </a>
+        </p>
+    </div>
+</body>
+</html>
